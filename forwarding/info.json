@@ -1,9 +1,0 @@
-{
-    "author" : ["saurichable", "flare", "aikaterna"],
-    "install_msg" : "Thank you for installing Forwarding!",
-    "name" : "Forwarding",
-    "short" : "Forward messages to the owner.",
-    "description" : "Forward all DMs sent to the bot to the bot owner (or a specified channel), including messages with attachments.",
-    "tags" : ["forwarding", "forward"],
-    "end_user_data_statement": "This cog stores user ID if they are set as a ping user."
-}
