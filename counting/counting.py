@@ -1,8 +1,8 @@
 import asyncio
-import datetime
 import discord
 import typing
 
+from datetime import datetime, timezone
 from discord.utils import get, find
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
@@ -12,7 +12,7 @@ class Counting(commands.Cog):
     Make a counting channel with goals.
     """
 
-    __version__ = "1.4.0a"
+    __version__ = "1.4.0b"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -42,7 +42,7 @@ class Counting(commands.Cog):
 
     @commands.command()
     async def countinfo(self, ctx):
-        """Info on Counting (beta)"""
+        """Info on Counting"""
         embed = discord.Embed(title="Info on Counting", color=await ctx.embed_color())
         embed.add_field(name="notes", value=f"• feel free to report bugs with {ctx.prefix}contact\n•messages containing the wrong count or a character other than , or : directly after a count will be deleted\n•double counts will also be deleted\n•counts that have been deleted or edited to be wrong will not affect the count")
         await ctx.send(embed=embed)
@@ -73,11 +73,12 @@ class Counting(commands.Cog):
             return await ctx.send(f"Set the channel with `{ctx.prefix}countset channel <channel>`, please.")
         await self.config.guild(ctx.guild).previous.set(number)
         await self.config.guild(ctx.guild).last.clear()
-        next_number = number + 1
         try:
             await channel.send(number)
         except (discord.Forbidden, discord.NotFound):
-            return await ctx.send(f"Unable to send starting number. Make sure {ctx.bot.user.display_name} has proper permissions and that the channel exists.")
+            return await ctx.send("I couldn't send the starting number. Please check that the channel exists and that I have permission to send messages there.")
+        await self.config.guild(ctx.guild).previous.set(number)
+        await self.config.guild(ctx.guild).last.clear()
         if channel.id != ctx.channel.id:
             await ctx.send(f"Counting start set to {number}.")
 
@@ -87,10 +88,12 @@ class Counting(commands.Cog):
         data = await self.config.guild(ctx.guild).all()
         channel = ctx.guild.get_channel(data["channel"])
         channel = channel.mention if channel else "None"
-        embed = discord.Embed(color=await ctx.embed_color(), timestamp=datetime.datetime.utcnow())
+        embed = discord.Embed(title=ctx.guild.name, color=await ctx.embed_color(), timestamp=datetime.now(timezone.utc))
         if ctx.guild.icon:
             if discord.__version__[0] == "2":
-                url = str(ctx.guild.icon.replace(size=1024, format="webp")) + "?quality=lossless"
+                url = str(ctx.guild.icon.replace(size=2048, static_format="webp")) 
+                if ctx.guild.icon.is_animated() = False:
+                    url += "?quality=lossless"
             else:
                 url=str(ctx.guild.icon_url) + "&quality=lossless"
                 if ctx.guild.is_icon_animated():
@@ -99,11 +102,11 @@ class Counting(commands.Cog):
             url
         except:
             url = None
-        embed.set_author(name=ctx.guild.name, icon_url=url)
-        embed.title = "**__Counting settings:__**"
-        embed.set_footer(text="*required to function properly")
-        embed.add_field(name="Channel*:", value=channel)
-        embed.add_field(name="Next number:", value=str(data["previous"] + 1))
+        embed.set_thumbnail(url=url)
+        embed.add_field(name="channel*", value=channel)
+        next_number = str(data["previous"] + 1)
+        embed.add_field(name="next number", value=f"`{next_number}`", inline=False)
+        embed.set_footer(text="*required to function")
         await ctx.send(embed=embed)
     
     @commands.Cog.listener()
@@ -117,7 +120,7 @@ class Counting(commands.Cog):
         next_number = previous + 1
         goal = await self.config.guild(message.guild).goal()
         seconds = await self.config.guild(message.guild).seconds()
-        if message.author.id != last_id:
+        if message.author.id != last_id and message.content != "":
             try:
                 x = (message.content.strip().split()[0])
                 transTable = x.maketrans("6", "6", ",:")
