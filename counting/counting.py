@@ -92,7 +92,7 @@ class Counting(commands.Cog):
         if ctx.guild.icon:
             if discord.__version__[0] == "2":
                 url = str(ctx.guild.icon.replace(size=2048, static_format="webp")) 
-                if ctx.guild.icon.is_animated() = False:
+                if not ctx.guild.icon.is_animated():
                     url += "?quality=lossless"
             else:
                 url=str(ctx.guild.icon_url) + "&quality=lossless"
