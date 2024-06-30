@@ -91,13 +91,13 @@ class Counting(commands.Cog):
         embed = discord.Embed(title=ctx.guild.name, color=await ctx.embed_color(), timestamp=datetime.now(timezone.utc))
         if ctx.guild.icon:
             if discord.__version__[0] == "2":
-                url = str(ctx.guild.icon.replace(size=2048, static_format="webp")) 
+                url = str(ctx.guild.icon.replace(size=1024, static_format="webp")) 
                 if not ctx.guild.icon.is_animated():
-                    url += "?quality=lossless"
+                    url += "&quality=lossless"
             else:
                 url=str(ctx.guild.icon_url) + "&quality=lossless"
                 if ctx.guild.is_icon_animated():
-                    url=ctx.guild.icon_url_as(format="gif", size=2048)
+                    url=ctx.guild.icon_url_as(format="gif")
         try:
             url
         except:
