@@ -12,7 +12,7 @@ class Counting(commands.Cog):
     Make a counting channel with goals.
     """
 
-    __version__ = "1.4.0b"
+    __version__ = "1.4.0c"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -48,7 +48,6 @@ class Counting(commands.Cog):
         await ctx.send(embed=embed)
 
     @checks.admin()
-    @checks.bot_has_permissions(manage_channels=True, manage_messages=True)
     @commands.group(autohelp=True, aliases=["counting"])
     @commands.guild_only()
     async def countset(self, ctx: commands.Context):
@@ -131,7 +130,7 @@ class Counting(commands.Cog):
                     await self.config.guild(message.guild).last.set(message.author.id)
                     n = now + 1
                     return
-            except ValueError:
+            except (ValueError, IndexError):
                 pass
         try:
             await message.delete()
@@ -145,18 +144,18 @@ class Counting(commands.Cog):
         if message.channel.id != await self.config.guild(message.guild).channel():
             return
         try:
-            x = (message.content.strip().split()[0])
+            x = message.content.strip().split()[0]
             transTable = x.maketrans("6", "6", ",:")
             y = x.translate(transTable)
             deleted = int(y)
             previous = await self.config.guild(message.guild).previous()
             if deleted == previous:
-                s = str(deleted)
-                msgs = await message.channel.history(limit=1).flatten()
-                msg = find(lambda m: m.content == s, msgs)
-                if not msg:
-                    p = deleted
-                    await self.config.guild(message.guild).previous.set(p)
-                    await message.channel.send(deleted)
-        except (TypeError, ValueError):
+                if discord.__version__[0] == "2":
+                    msgs = [message async for message in message.channel.history(limit=1)]
+                else:
+                    msgs = await message.channel.history(limit=1).flatten()
+                super_previous = previous - 1
+                if int(msgs[0].content.strip().split()[0].translate(transTable)) == super_previous:
+                    await message.channel.send(y)
+        except (ValueError, IndexError):
             return
