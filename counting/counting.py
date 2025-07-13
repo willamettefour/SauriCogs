@@ -25,6 +25,7 @@ class Counting(commands.Cog):
             previous=0,
             goal=0,
             last=0,
+            lockout=0,
             whitelist=None,
             warning=False,
             seconds=0,
@@ -59,7 +60,7 @@ class Counting(commands.Cog):
 
         If a channel isn't provided, it will remove the current channel."""
         if not channel:
-            await self.config.guild(ctx.guild).channel.set(0)
+            await self.config.guild(ctx.guild).channel.clear()
             return await ctx.send("Channel removed.")
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f"{channel.mention} has been set for counting.")
@@ -114,6 +115,9 @@ class Counting(commands.Cog):
             return
         if message.channel.id != await self.config.guild(message.guild).channel():
             return
+        lockout_id = await self.config.guild(message.guild).lockout()
+        if message.author.id != lockout_id:
+            await self.config.guild(message.guild).lockout.clear()
         last_id = await self.config.guild(message.guild).last()
         previous = await self.config.guild(message.guild).previous()
         next_number = previous + 1
@@ -156,6 +160,15 @@ class Counting(commands.Cog):
                     msgs = await message.channel.history(limit=1).flatten()
                 super_previous = previous - 1
                 if int(msgs[0].content.strip().split()[0].translate(transTable)) == super_previous:
-                    await message.channel.send(y)
+                    lockout_id = await self.config.guild(message.guild).lockout()
+                    if message.author.id != lockout_id:
+                        await self.config.guild(message.guild).lockout.set(message.author.id)
+                        try:
+                            await message.channel.send(y)
+                        except (discord.Forbidden, discord.NotFound):
+                            return
+                    else:
+                        await self.config.guild(message.guild).previous.set(super_previous)
+                    await self.config.guild(message.guild).last.set(self.bot.user.id)
         except (ValueError, IndexError):
             return
